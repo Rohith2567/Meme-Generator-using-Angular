@@ -1,0 +1,296 @@
+import { Injectable } from '@nestjs/common';
+import { CreateMemeDto } from './dto/create-meme.dto';
+import { UpdateMemeDto } from './dto/update-meme.dto';
+import { readFileSync, writeFileSync } from 'fs';
+import { HttpService } from '@nestjs/axios';
+import { resolve } from 'path';
+import { AxiosResponse } from 'axios';
+import { catchError, map } from 'rxjs/operators';
+import { of } from 'rxjs';
+
+const MEME_FILE_PATH = resolve(__dirname, 'assets/memes.json');
+
+@Injectable()
+export class MemeService {
+  memes: string[] = []
+
+  constructor(private http: HttpService) {
+    // this.memes = JSON.parse(this.readFile());
+    // console.log(this.memes);
+    try {
+      this.memes = JSON.parse(readFileSync(MEME_FILE_PATH, 'utf-8'));
+    } catch (err) {
+      console.log('No memes file found, creating one');
+      this.generateMemeFile();
+    }
+  }
+
+  readFile() {
+    return readFileSync(MEME_FILE_PATH, 'utf-8');
+  }
+
+  create(createMemeDto: CreateMemeDto) {
+    
+    return this.http.request({
+      url: `https://meme-generator-and-template-database.p.rapidapi.com/template/${createMemeDto.meme}`,
+      method: 'POST',
+      headers: {
+        'X-RapidAPI-Host': process.env.Rapidapi_Host || '',
+        'X-RapidAPI-Key': process.env.Rapidapi_key || '',
+        'Content-Type': 'application/json'
+      },
+      data: {
+        text0: {
+          text: createMemeDto.text0?.text || '',
+          font_size: createMemeDto.text0?.font_size || 33,
+          // font: createMemeDto.text0?.font || 'kanit',
+        },
+        text1: {
+          text: createMemeDto.text1?.text || '',
+          font_size: createMemeDto.text1?.font_size || 30,
+          // font: createMemeDto.text1?.font || 'Impact',
+        },
+      },
+      responseType: 'arraybuffer',
+    }).pipe(
+      map((resp: AxiosResponse) => {
+        console.log('Meme generated successfully');
+        return {
+          url: `data:image/png;base64,${Buffer.from(resp.data).toString('base64')}`,
+        };
+      }),
+      catchError((err) => {
+        console.log(
+          '🚀 ~ file: meme.service.ts ~ line 38 ~ MemeService ~ catchError ~ err',
+          err
+        );
+        return of(err);
+      })
+    );
+  }
+
+
+
+  findAll(q: string) {
+    console.log("q: ", q)
+    if (!q) {
+      return this.memes.slice(0, 850); // Return first 20 memes if no query
+    }
+    return this.search(q, this.memes);
+  }
+
+  search(query: string, memeList: string[]) {
+    const regex = new RegExp(query, 'i');
+    return memeList.filter(meme => regex.test(meme)).slice(0, 20);
+    // return memeList.filter(meme => regex.test(meme));
+  }
+
+
+  generateMemeFile() {
+    this.http.request({
+      url: 'https://meme-generator-and-template-database.p.rapidapi.com/templates',
+      method: 'GET',
+      headers: {
+        'X-RapidAPI-Host': process.env.Rapidapi_Host || '',
+        'X-RapidAPI-Key': process.env.Rapidapi_key || '',
+      }
+    }).subscribe((resp: AxiosResponse) => {
+      const memeData = resp.data;
+      this.memes = Object.keys(memeData);
+      writeFileSync(MEME_FILE_PATH, JSON.stringify(this.memes));
+      console.log('File written for memes');
+    });
+  //   const meme = [
+  //     "Over_Educated_Problems",
+  //     "Woman_yelling_at_cat",
+  //     "Two_cats_fighting_for_real",
+  //     "tom_the_cat_shooting_himself_",
+  //     "Loading_cat",
+  //     "Woosh_cat",
+  //     "I_can_has_cheezburger_cat",
+  //     "Smudge_the_cat",
+  //     "Wants_to_know_your_location",
+  //     "sad_thumbs_up_cat",
+  //     "woman_yelling_at_cat",
+  //     "Angry_lady_cat",
+  //     "Crying_cat",
+  //     "crying_cat",
+  //     "Sarcastically_surprised_Kirk",
+  //     "Tuna_the_dog_(Phteven)",
+  //     "does_your_dog_bite",
+  //     "small_doge_big_doge",
+  //     "angry_dog_meme",
+  //     "Dog_in_burning_house",
+  //     "PTSD_dog",
+  //     "dog_vs_werewolf",
+  //     "Strong_dog_vs_weak_dog",
+  //     "Big_dog_small_dog",
+  //     "small_doge_big_doge",
+  //     "Bernie_I_Am_Once_Again_Asking_For_Your_Support",
+  //     "shrek_five_minutes",
+  //     "Get_Better_Material_meme",
+  //     "angry_dog_meme",
+  //     "meme_man",
+  //     "dj_khaled_suffering_from_success_meme",
+  //     "angry_turkish_man_playing_cards_meme",
+  //     "drake_meme",
+  //     "Average_Enjoyer_meme",
+  //     "Chernobyl_meme_postfity",
+  //     "Midwit_memes",
+  //     "5_panel_gru_meme",
+  //     "Here_it_come_meme",
+  //     "astronaut_meme_always_has_been_template",
+  //     "Riley_Reid_meme",
+  //     "Spongebob_diapers_meme",
+  //     "umbrella_academy_meme",
+  //     "Skyrim_skill_meme",
+  //     "Types_of_Headaches_meme",
+  //     "Arm_wrestling_meme_template",
+  //     "Angry_face",
+  //     "Everywhere_I_go_I_see_his_face",
+  //     "Are_you_two_friends?",
+  //     "Distracted_girlfriend",
+  //     "Distracted_boyfriend",
+  //     "What_my_friends_think_I_do",
+  //     "Overly_Attached_Girlfriend",
+  //     "Disloyal_Boyfriend",
+  //     "Friendship_ended_with_X,_now_Y_is_my_best_friend",
+  //     "Distracted_Boyfriend",
+  //     "He_Will_Never_Get_A_Girlfriend",
+  //     "Crazy_Girlfriend_Praying_Mantis",
+  //     "Error_404",
+  //     "Trying_to_calculate_how_much_sleep_I_can_get",
+  //     "Hey_you_going_to_sleep?",
+  //     "Homer_Simpson_sleeping_peacefully",
+  //     "sleepy_donald_duck_in_bed",
+  //     "sleeping_Squidward",
+  //     "i_sleep_real_shit",
+  //     "Soldier_protecting_sleeping_child",
+  //     "neo_dodging_a_bullet_matrix",
+  //     "startrek",
+  //     "So_anyway_I_started_blasting",
+  //     "The_office_start_dating_her_even_harder",
+  //     "Socially_Awkward_Awesome_Penguin",
+  //     "Socially_Awkward_Penguin",
+  //     "Squidward",
+  //     "Fun_Facts_with_Squidward",
+  //     "terminator_arnold_schwarzenegger",
+  //     "Spongebob_vs_Squidward_Alarm_Clocks",
+  //     "Awkward_Moment_Sealion",
+  //     "Obama_giving_Obama_award",
+  //     "Poor_Squidward_vs_Rich_Spongebob",
+  //     "Squidward_pointing",
+  //     "Daring_today,_aren't_we_squidward",
+  //     "There_is_no_war_in_ba_sing_se",
+  //     "sleeping_Squidward",
+  //     "Socially_Awesome_Awkward_Penguin",
+  //     "Squidward_chair",
+  //     "Don't_You_Squidward",
+  //     "Squidward_window",
+  //     "Awkward_Olympics",
+  //     "Good_Guy_Socially_Awkward_Penguin",
+  //     "Jon_Stewart_Skeptical",
+  //     "Skeptical_Swardson",
+  //     "Hawkward",
+  //     "Herm_Edwards",
+  //     "baby_yoda_die_trash",
+  //     "baby_yeet",
+  //     "Hawkward",
+  //     "Carefully_he's_a_hero",
+  //     "Doomguy",
+  //     "psst_spiderman",
+  //     "spiderman_pointing_at_spiderman",
+  //     "Cat_in_the_hat_with_a_bat._(_______Colorized)",
+  //     "Joker._It's_simple_we_kill_the_batman",
+  //     "Stop_giving_me_your_toughest_battles",
+  //     "death_battle",
+  //     "batman_signal",
+  //     "pouring_gas_on_fire",
+  //     "Dog_on_fire",
+  //     "cast_it_into_the_fire",
+  //     "spongebob_fire",
+  //     "elmo_fire",
+  //     "It's_all_coming_together",
+  //     "Photogenic_College_Football_Player",
+  //     "Scrooge_McDuck_2",
+  //     "Arrogant_Rich_Man",
+  //     "Advice_Doge",
+  //     "Ridiculously_Photogenic_Guy",
+  //     "Depression_Dog",
+  //     "Intelligent_Dog",
+  //     "Doge_2",
+  //     "Tuna_the_dog_(Phteven)",
+  //     "does_your_dog_bite",
+  //     "Dad_Joke_Dog",
+  //     "Scrooge_McDuck",
+  //     "Multi_Doge",
+  //     "Original_Stoner_Dog",
+  //     "High_Dog",
+  //     "Google_Chrome",
+  //     "I_Have_No_Idea_What_I_Am_Doing_Dog",
+  //     "Blankie_the_Shocked_Dog",
+  //     "Google_No_Results",
+  //     "Dog_on_fire",
+  //     "small_doge_big_doge",
+  //     "Doge_bonk",
+  //     "Dog_in_burning_house",
+  //     "angry_dog_meme",
+  //     "Bill_Murray_Groundhog_Day",
+  //     "Advice_Dog",
+  //     "PTSD_dog",
+  //     "Sad_Cat_Holding_Dog",
+  //     "Google_Translate",
+  //     "Buff_Doge_vs_Crying_Cheems",
+  //     "Kong_Godzilla_Doge",
+  //     "dog_vs_werewolf",
+  //     "Gentleman_frog",
+  //     "Strong_dog_vs_weak_dog",
+  //     "Bad_Pun_Dog",
+  //     "Big_dog_small_dog",
+  //     "Doge",
+  //     "Buff_Doge_vs._Cheems",
+  //     "Photogenic_Scene_Guy",
+  //     "Spongebob_laughing_Hysterically",
+  //     "You're_laughing.",
+  //     "Tom_Cruise_laugh",
+  //     "2-3_wolves_laugh",
+  //     "Rich_men_laughing",
+  //     "laughing_kid",
+  //     "Leonardo_dicaprio_django_laugh",
+  //     "Little_miss",
+  //     "Permission_Bane",
+  //     "little_miss_sunshine",
+  //     "comic_book_guy_worst_ever",
+  //     "Comic_Book_Guy",
+  //     "Blank_Comic_Panel_2x1",
+  //     "Blank_Comic_Panel_2x2",
+  //     "Blank_Comic_Panel_1x2",
+  //     "michael_jackson_eating_popcorn",
+  //     "crying_michael_jordan",
+  //     "Look_What_They_Need_To_Mimic_A_Fraction_Of_Our_Power",
+  //     "drake_meme",
+  //     "drake_yes_no_reverse",
+  //     "Apu_takes_bullet",
+  //     "sweating_bullets"
+  //   ]
+  //   const uniqueMemes = [...new Set(meme)];
+  //   this.memes = uniqueMemes;
+
+  //   writeFileSync(MEME_FILE_PATH, JSON.stringify(this.memes));
+  //   console.log('File written for memes');
+  }
+
+
+
+  // findOne(id: number) {
+  //   return `This action returns a #${id} meme`;
+  // }
+
+  // update(id: number, updateMemeDto: UpdateMemeDto) {
+  //   return `This action updates a #${id} meme`;
+  // }
+
+  // remove(id: number) {
+  //   return `This action removes a #${id} meme`;
+  // }
+}
