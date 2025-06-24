@@ -3,6 +3,8 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
+    "start:build": "nx run sigma-memer:build && nx run api:build",
+    "start:app": "node ./dist/apps/api/main.js",
     "start:prod": "nx run sigma-memer:build && nx run api:build && node ./dist/apps/api/main.js"
   },
   "private": true,
