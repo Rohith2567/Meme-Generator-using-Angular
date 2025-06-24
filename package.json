@@ -2,7 +2,9 @@
   "name": "@sigma-memer/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "start:prod": "nx run sigma-memer:build && nx run api:build && node ./dist/apps/api/main.js"
+  },
   "private": true,
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "~1.17.1",
@@ -72,8 +74,10 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/mapped-types": "^2.1.0",
     "@nestjs/platform-express": "^11.0.0",
+    "@nestjs/serve-static": "^5.0.3",
     "@nestjs/throttler": "^6.4.0",
     "axios": "^1.6.0",
+    "dotenv": "^16.5.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
     "zone.js": "~0.15.0"
