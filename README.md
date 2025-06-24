@@ -1,6 +1,3 @@
-# Link to deployed website
-✨ Click here -> [Sigma-memer](https://meme-generator-using-angular.onrender.com) ✨
-
 # SigmaMemer
 
 <a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
